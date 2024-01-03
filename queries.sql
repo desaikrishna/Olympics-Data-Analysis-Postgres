@@ -146,3 +146,147 @@ order by age desc
 select * from olympics_history limit 20
 
 select age from olympics_history where age>'50' and age < '60'
+
+
+'10. Find the Ratio of male and female athletes participated in all olympic games.
+Problem Statement: Write a SQL query to get the ratio of male and female participants'
+
+with male_count as(
+select count(sex) as male 
+from olympics_history
+where sex='M'),
+female_count as(
+select count(sex) as female
+from olympics_history
+where sex='F'),
+final_ratio as (
+select a.male::FLOAT/b.female as ratio
+from male_count a, female_count b)
+select 1, ratio from final_ratio
+
+'11. Fetch the top 5 athletes who have won the most gold medals.
+Problem Statement: SQL query to fetch the top 5 athletes who have won the most gold medals'
+
+select * from olympics_history limit 5
+
+with gold_count as(
+select athlete_name, count(medal) as medal_count
+from olympics_history
+where medal='Gold'
+group by athlete_name
+order by count(medal) desc),
+dense_ranking as(
+SELECT
+	*,
+	DENSE_RANK() OVER (ORDER BY medal_count DESC) as ranking
+	from gold_count
+)
+select athlete_name,medal_count
+from dense_ranking
+where ranking <=5
+
+'12. Fetch the top 5 athletes who have won the most medals (gold/silver/bronze).
+Problem Statement: SQL Query to fetch the top 5 athletes who have won the most medals (Medals include gold, silver and bronze).'
+
+with gold_count as(
+select athlete_name, count(medal) as medal_count
+from olympics_history
+where medal='Gold' or medal='Silver' or medal='Bronze'
+group by athlete_name
+order by count(medal) desc),
+dense_ranking as(
+SELECT
+	*,
+	DENSE_RANK() OVER (ORDER BY medal_count DESC) as ranking
+	from gold_count
+)
+select athlete_name,medal_count
+from dense_ranking
+where ranking <=5
+
+'13. Fetch the top 5 most successful countries in olympics. Success is defined by no of medals won.
+
+Problem Statement: Write a SQL query to fetch the top 5 most successful countries in olympics. (Success is defined by no of medals won).'
+with country_medal_country as(
+select b.region, count(medal) as medal_count from olympics_history a
+join olympics_history_noc_regions b
+on a.noc = b.noc
+where medal != 'NA'
+group by b.region
+order by count(medal) desc),
+dense_ranking as(
+SELECT
+	*,
+	DENSE_RANK() OVER (ORDER BY medal_count DESC) as ranking
+	from country_medal_country
+)
+select region, medal_count
+from dense_ranking
+where ranking<=5
+
+
+'14. List down total gold, silver and bronze medals won by each country.
+
+Problem Statement: Write a SQL query to list down the  total gold, silver and bronze medals won by each country.'
+
+select b.region, medal,count(medal) as medal_count from olympics_history a
+join olympics_history_noc_regions b
+on a.noc = b.noc
+where medal <> 'NA'
+group by b.region, medal
+order by b.region, medal
+
+select country,coalesce(gold,0) as gold,
+coalesce(silver,0) as silver,
+coalesce(bronze,0) as bronze
+from crosstab('select b.region, medal,count(medal) as medal_count from olympics_history a
+join olympics_history_noc_regions b
+on a.noc = b.noc
+where medal <> ''NA''
+group by b.region, medal
+order by b.region, medal',
+'values (''Bronze''),(''Gold''),(''Silver'')')  
+as result (country varchar, bronze bigint, gold bigint,silver bigint)
+order by gold desc, silver desc, bronze desc
+
+'If we dont write values wrong values will be assigned to medal name columns like botswana or burundi'
+
+
+'15. List down total gold, silver and bronze medals won by each country corresponding to each olympic games.'
+
+select games, b.region, medal, count(medal) as medal_count from olympics_history a
+join olympics_history_noc_regions b
+on a.noc = b.noc
+where medal <> 'NA'
+group by games,b.region, medal
+order by games,b.region, medal
+
+select games,country,coalesce(gold,0) as gold,
+coalesce(silver,0) as silver,
+coalesce(bronze,0) as bronze
+from crosstab('select games,b.region, medal,count(medal) as medal_count from olympics_history a
+join olympics_history_noc_regions b
+on a.noc = b.noc
+where medal <> ''NA''
+group by games,b.region, medal
+order by games, medal',
+'values (''Bronze''),(''Gold''),(''Silver'')')  
+as result (games varchar, country varchar, bronze bigint, gold bigint, silver bigint)
+order by gold desc, silver desc, bronze desc
+
+
+SELECT substring(games,1,position(' - ' in games) - 1) as games
+        , substring(games,position(' - ' in games) + 3) as country
+        , coalesce(gold, 0) as gold
+        , coalesce(silver, 0) as silver
+        , coalesce(bronze, 0) as bronze
+    FROM CROSSTAB('SELECT concat(games, '' - '', nr.region) as games
+                , medal
+                , count(1) as total_medals
+                FROM olympics_history oh
+                JOIN olympics_history_noc_regions nr ON nr.noc = oh.noc
+                where medal <> ''NA''
+                GROUP BY games,nr.region,medal
+                order BY games,medal',
+            'values (''Bronze''), (''Gold''), (''Silver'')')
+    AS FINAL_RESULT(games text, bronze bigint, gold bigint, silver bigint);
