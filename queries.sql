@@ -58,6 +58,9 @@ from CountryCounts
 where countOfCountries = (select min(countOfCountries)
 						 from CountryCounts)
 
+/*--------------------------------------------------------------------------------------------------*/
+
+
 /*5. Which nation has participated in all of the olympic games
 
 Problem Statement: SQL query to return the list of countries who have been 
@@ -86,6 +89,10 @@ on b.tot_olm = a.country_tot_part
 
 select * from olympics_history limit 5;
 
+
+/*--------------------------------------------------------------------------------------------------*/
+
+
 /*6. Identify the sport which was played in all summer olympics.
 
 Problem Statement: SQL query to fetch the list of all sports which have 
@@ -98,6 +105,10 @@ where season = 'Summer'
 group by sport)
 select sport,counting 
 from sport_count where counting = (select max(counting) from sport_count )
+
+
+/*--------------------------------------------------------------------------------------------------*/
+
 
 
 /*7. Which Sports were just played only once in the olympics.
