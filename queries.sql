@@ -129,6 +129,9 @@ select games,count(distinct(sport))
 from olympics_history 
 group by games
 
+/*--------------------------------------------------------------------------------------------------*/
+
+
 /*9. Fetch oldest athletes to win a gold medal
 
 Problem Statement: SQL Query to fetch the details of the oldest athletes 
@@ -157,6 +160,9 @@ order by age desc
 select * from olympics_history limit 20
 
 select age from olympics_history where age>'50' and age < '60'
+
+
+/*--------------------------------------------------------------------------------------------------*/
 
 
 '10. Find the Ratio of male and female athletes participated in all olympic games.
