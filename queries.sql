@@ -307,3 +307,107 @@ SELECT substring(games,1,position(' - ' in games) - 1) as games
                 order BY games,medal',
             'values (''Bronze''), (''Gold''), (''Silver'')')
     AS FINAL_RESULT(games text, bronze bigint, gold bigint, silver bigint);
+
+'16. Identify which country won the most gold, most silver and most bronze medals in each olympic games.
+Problem Statement: Write SQL query to display for each Olympic Games, which country won the highest gold, silver and bronze medals.'
+
+with test_cte as (
+select games,b.region,count(medal) as medal_count from olympics_history a
+join olympics_history_noc_regions b
+on a.noc = b.noc
+where medal <> 'NA' and medal = 'Gold'
+group by games,b.region, medal
+order by games,medal 
+),
+test1_cte as(
+	select games,max(medal_count) as goldmax
+from test_cte
+group by games
+)
+select a.games,a.region, goldmax 
+from test_cte a 
+join test1_cte b
+on b.goldmax = a.medal_count
+and a.games = b.games
+
+
+'18. Which countries have never won gold medal but have won silver/bronze medals?
+
+Problem Statement: Write a SQL Query to fetch details of countries which have won silver or bronze medal but never won a gold medal.'
+
+select games,b.region,count(medal) as medal_count from olympics_history a
+join olympics_history_noc_regions b
+on a.noc = b.noc
+where medal <> 'NA' and medal = 'Silver' or medal = 'Bronze'
+group by games,b.region, medal
+order by games,medal 
+
+SELECT
+    b.region,
+    COUNT(CASE WHEN Medal = 'Silver' THEN 1 END) AS silver_count,
+    COUNT(CASE WHEN Medal = 'Bronze' THEN 1 END) AS bronze_count
+	from olympics_history a
+	join olympics_history_noc_regions b
+	on a.noc = b.noc
+	WHERE
+    	Medal IN ('Silver', 'Bronze')
+    	AND b.region NOT IN (
+        SELECT DISTINCT  b.region
+        from olympics_history a
+		join olympics_history_noc_regions b
+		on a.noc = b.noc
+        WHERE Medal = 'Gold'
+    )
+		GROUP BY
+			b.region
+		order by b.region;
+
+
+'19. In which Sport/event, India has won highest medals.
+
+Problem Statement: Write SQL Query to return the sport which has won India the highest no of medals. '
+
+with test_cte as(
+SELECT  b.region,sport,count(medal) as medal_count
+        from olympics_history a
+		join olympics_history_noc_regions b
+		on a.noc = b.noc
+        WHERE medal ='Gold' or medal = 'Silver' or medal='Bronze'
+		group by b.region,sport),
+test1_cte as(
+	select sport, medal_count
+	from test_cte
+	where region ='India'
+)
+select sport, medal_count
+from test1_cte
+where medal_count = (select max(medal_count) from test1_cte)
+	
+with test_cte as(
+SELECT b.region, sport, count(medal) as medal_count
+        from olympics_history a
+		join olympics_history_noc_regions b
+		on a.noc = b.noc
+        WHERE medal ='Gold' or medal = 'Silver' or medal='Bronze' 
+		group by b.region,sport)
+	select sport, medal_count
+	from test_cte 
+	where region ='India'
+	group by sport
+	having medal_count = (select max(medal_count) from test_cte)
+	
+'20. Break down all olympic games where India won medal for Hockey and how many medals in each olympic games
+
+Problem Statement: Write an SQL Query to fetch details of all Olympic Games where India won medal(s) in hockey. '
+
+with test_cte as( 
+SELECT b.region, sport,games, count(medal) as medal_count
+        from olympics_history a
+		join olympics_history_noc_regions b
+		on a.noc = b.noc
+        WHERE medal ='Gold' or medal = 'Silver' or medal='Bronze' 
+		group by b.region,sport,games
+		order by games)
+    select region,sport, games,medal_count
+	from test_cte
+	where region ='India' and sport='Hockey'
